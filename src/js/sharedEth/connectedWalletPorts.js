@@ -55,12 +55,6 @@ function subscribeToNetworkChanges(app, eth, ethereum) {
     ethereum.networkChangedSet = true;
   }
 }
-export function sendUNSLoginData(app, data){
-  app.ports.giveUNSLoginData.send({
-    domain: data['sub'],
-    address: data['wallet_address'] ?? ''
-  })
-}
 
 async function connectToTrxProvider(
   app,

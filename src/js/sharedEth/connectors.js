@@ -139,8 +139,15 @@ async function connectUnstoppableDomains(app, eth, ethereum2, disallowAuthDialog
         ethereum: null,
       }
     }
-    
 }
+
+export function sendUNSLoginData(app, data){
+  app.ports.giveUNSLoginData.send({
+    domain: data['sub'],
+    address: data['wallet_address'] ?? ''
+  })
+}
+
 async function logoutUNS(app){
   try{
     app.ports.logoutUNSUser.send(true);
