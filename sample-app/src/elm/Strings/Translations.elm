@@ -42,7 +42,12 @@ tally lang =
         En ->
             "Tally"
 
-
+unstoppable_domains : Lang -> String
+unstoppable_domains lang =
+    case lang of
+        En ->
+            "Unstoppable Domains"
+            
 choose_wallet_terms_part1 : Lang -> String
 choose_wallet_terms_part1 lang =
     case lang of

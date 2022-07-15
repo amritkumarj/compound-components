@@ -8,6 +8,7 @@ type ProviderType
     | MetaMask
     | MetaMaskMobile
     | ImToken
+    | UnstoppableDomains
     | Unknown
 
 
@@ -31,6 +32,9 @@ detectProvider providerType =
 
         "im_token" ->
             ImToken
+
+        "unstoppable_doamins" ->
+            UnstoppableDomains
 
         _ ->
             Unknown

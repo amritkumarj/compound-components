@@ -2,6 +2,14 @@ import Eth from 'web3-eth';
 import { getAccounts, getNetworkId, setLedgerProvider, setNewTrxProvider } from './eth';
 import WalletLink from 'walletlink';
 import WalletConnectProvider from '@walletconnect/web3-provider';
+import UAuth from '@uauth/js'
+import { sendUNSLoginData } from './connectedWalletPorts';
+
+const uauth = new UAuth({
+  clientID: '69833c81-0781-4011-9fc4-6fe7077d7c4d',
+  redirectUri: process.env.NODE_ENV == 'development' ? 'http://localhost:3000' : 'https://compound.blockdudes.com',
+  scope: "openid wallet"
+})
 
 async function connectLedger(eth, ledgerDerivationPath, disallowAuthDialog = false, desiredNetworkId = 1) {
   // Never auto-connect to ledger, since it's complicated
@@ -91,6 +99,7 @@ async function connectWeb3(eth, ethereum, disallowAuthDialog = false, isAutoConn
 
 async function connectTally(eth, ethereum, disallowAuthDialog = false, isAutoConnect = false) {
   if (ethereum && ethereum.isTally) {
+
     return await connectWeb3Helper(eth, ethereum, disallowAuthDialog,isAutoConnect);
   } else {
     return {
@@ -98,6 +107,48 @@ async function connectTally(eth, ethereum, disallowAuthDialog = false, isAutoCon
       account: null,
       ethereum: null,
     };
+  }
+}
+
+async function connectUnstoppableDomains(app, eth, ethereum2, disallowAuthDialog = false, isAutoConnect = false, desiredNetworkId = 1) {
+  let networkId, account, ethereum, user
+
+    try{
+      if(!disallowAuthDialog){
+        const authorized = await uauth.loginWithPopup()
+        if(!!authorized){
+          user = await uauth.user()
+        }
+      }else{
+        user = await uauth.user()
+      }
+      sendUNSLoginData(app, user)
+  
+      if (['web3', 'injected'].includes(user.wallet_type_hint)) {
+        ({ networkId, account, ethereum } =  await connectWeb3Helper(eth, ethereum2, disallowAuthDialog, false))
+      } else if (user.wallet_type_hint === 'walletconnect') {
+        ({ networkId, account, ethereum } = await connectWalletConnect(eth, disallowAuthDialog, desiredNetworkId));
+      } else {
+        throw new Error('Connector not supported')
+      }
+       return { networkId, account, ethereum}
+    }catch(e){
+      return {
+        networkId: null,
+        account: null,
+        ethereum: null,
+      }
+    }
+    
+}
+async function logoutUNS(app){
+  try{
+    app.ports.logoutUNSUser.send(true);
+    if (!uauth) {
+      await uauth.logout()
+    }
+  }catch(e){
+    console.log(e)
   }
 }
 
@@ -150,6 +201,7 @@ async function connectShowAccount(eth, showAccount) {
 }
 
 async function connectWalletConnect(eth, disallowAuthDialog = false, desiredNetworkId = 1) {
+
   const ethProviderName = desiredNetworkId == 3 ? 'ropsten' : 'mainnet';
   const JSONRPC_URL = eth.dataProviders[ethProviderName].host;
   const CHAIN_ID = desiredNetworkId;
@@ -204,4 +256,4 @@ async function disconnect(eth) {
   return [null, null, null];
 }
 
-export { connectLedger, connectWalletLink, connectWeb3, connectTally, connectShowAccount, connectWalletConnect, disconnect };
+export { connectLedger, connectWalletLink, connectWeb3, connectTally, connectUnstoppableDomains, connectShowAccount, connectWalletConnect, disconnect, logoutUNS };

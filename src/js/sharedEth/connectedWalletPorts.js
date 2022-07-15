@@ -8,6 +8,8 @@ import {
   connectShowAccount,
   connectWalletConnect,
   disconnect,
+  connectUnstoppableDomains,
+  logoutUNS
 } from './connectors';
 import { toScaledDecimal } from '../sharedJs/math';
 import storage from '../sharedJs/storage';
@@ -21,6 +23,7 @@ const PROVIDER_TYPE_WEB3 = 3;
 const PROVIDER_TYPE_SHOW_ACCOUNT = 3;
 const PROVIDER_TYPE_WALLET_CONNECT = 4;
 const PROVIDER_TYPE_TALLY = 5;
+const PROVIDER_TYPE_UNSTOPPABLE_DOMAINS = 6;
 
 function subscribeToAccountChanges(app, ethereum) {
   if (ethereum && typeof ethereum.on !== 'undefined' && !ethereum.accountsChangedSet) {
@@ -51,6 +54,12 @@ function subscribeToNetworkChanges(app, eth, ethereum) {
 
     ethereum.networkChangedSet = true;
   }
+}
+export function sendUNSLoginData(app, data){
+  app.ports.giveUNSLoginData.send({
+    domain: data['sub'],
+    address: data['wallet_address'] ?? ''
+  })
 }
 
 async function connectToTrxProvider(
@@ -96,12 +105,17 @@ async function connectToTrxProvider(
     case PROVIDER_TYPE_WALLET_CONNECT:
       ({ networkId, account, ethereum } = await connectWalletConnect(eth, showAccount, desiredNetworkId));
       break;
+    case PROVIDER_TYPE_UNSTOPPABLE_DOMAINS:
+        ({ networkId, account, ethereum } = await connectUnstoppableDomains(app, eth, globEthereum, disallowAuthDialog, desiredNetworkId));
+        break;
     default:
       ({ networkId, account, ethereum } = await disconnect(eth));
       establishWithoutAccount = true;
       break;
   }
-
+  if(!!account && newProviderType != PROVIDER_TYPE_UNSTOPPABLE_DOMAINS){
+    await logoutUNS(app)
+  }
   if (establishWithoutAccount || !!account) {
     // If we didn't prompt an auth dialog, don't store this as a user choice
     if (!disallowAuthDialog) {

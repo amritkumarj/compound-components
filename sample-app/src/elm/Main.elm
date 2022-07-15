@@ -203,6 +203,9 @@ view { connectedEthWalletModel, userLanguage } =
 
                             Just ConnectedEthWallet.WalletConnect ->
                                 "Wallet Connect"
+                            
+                            Just ConnectedEthWallet.UnstoppableDomains ->
+                                "Unstoppable Domains"
 
                             _ ->
                                 "None"

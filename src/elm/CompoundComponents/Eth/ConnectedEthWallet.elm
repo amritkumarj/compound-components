@@ -19,6 +19,8 @@ port module CompoundComponents.Eth.ConnectedEthWallet exposing
     , translator
     , tryConnect
     , update
+    , giveUNSData
+    , UNSData
     )
 
 import CompoundComponents.Console as Console
@@ -33,7 +35,7 @@ import CompoundComponents.Utils.NumberFormatter exposing (formatTokenBalanceWith
 import Decimal exposing (Decimal)
 import Html exposing (Html, a, button, div, h3, h4, h5, p, span, text)
 import Html.Events exposing (onClick)
-import Json.Decode
+import Json.Decode exposing (Value, decodeValue, field)
 import Strings.Translations as Translations
 
 
@@ -44,6 +46,7 @@ type WalletProviderType
     | Ledger
     | OtherWeb3Browser
     | WalletConnect
+    | UnstoppableDomains
     | None
 
 
@@ -113,6 +116,8 @@ type InternalMsg
     | ResetToChooseProvider
     | RequestShowTerms
     | Error String
+    | SetUNSUser UNSData
+    | LogoutUNSUser
 
 
 type Msg
@@ -127,6 +132,11 @@ type alias TranslationDictionary msg =
 type alias Translator msg =
     Msg -> msg
 
+
+type alias UNSData = 
+    { domain: String
+    , address: String   
+    }
 
 translator : TranslationDictionary msg -> Translator msg
 translator { onInternalMessage } msg =
@@ -445,6 +455,12 @@ update internalMsg model =
         RequestShowTerms ->
             ( model, Cmd.none )
 
+        SetUNSUser { domain, address} -> 
+            ( model, Cmd.none )
+
+        LogoutUNSUser -> 
+            ( model, Cmd.none )
+            
         Error error ->
             ( { model | errors = model.errors }, Console.log error )
 
@@ -521,6 +537,11 @@ connectItemView userLanguage isCompoundChain providerType =
                     , Translations.tally userLanguage
                     )
 
+                UnstoppableDomains ->
+                    ( " connect-wallet-icon--uns"
+                    , Translations.unstoppable_domains userLanguage
+                    )
+
                 _ ->
                     ( " connect-wallet-icon--metamask"
                     , Translations.metamask userLanguage
@@ -589,6 +610,9 @@ chooseWalletView userLanguage isCompoundChain ({ chooseWalletState } as model) =
                                         ++ coinbaseWalletItem
                                         ++ lineDivider
                                         ++ [ connectItemView userLanguage isCompoundChain Tally ]
+                                        ++ lineDivider
+                                        ++ [ connectItemView userLanguage isCompoundChain UnstoppableDomains ]
+
                                     )
                                ]
                             ++ [ termsView userLanguage isCompoundChain ]
@@ -826,6 +850,8 @@ port chooseProvider : (Bool -> msg) -> Sub msg
 
 port retrieveLedgerAccounts : { derivationPaths : List String, ledgerConnectRopsten : Bool } -> Cmd msg
 
+port logoutUNSUser : (Bool -> msg) -> Sub msg
+
 
 askRetrieveLedgerAccounts : Model -> Cmd msg
 askRetrieveLedgerAccounts model =
@@ -896,6 +922,9 @@ askChangeTrxProvider model newProviderType ledgerDerivationPath ledgerWalletForc
 
                 Tally ->
                     5
+                
+                UnstoppableDomains ->
+                    6
 
                 None ->
                     0
@@ -915,6 +944,7 @@ askChangeNetworkId newNetworkId =
 
 
 port giveAccountWeb3Port : (Json.Decode.Value -> msg) -> Sub msg
+port giveUNSLoginData : (Json.Decode.Value -> msg) -> Sub msg
 
 
 giveAccount : (Result Json.Decode.Error (Maybe CustomerAddress) -> msg) -> Sub msg
@@ -926,7 +956,16 @@ giveAccount wrapper =
     giveAccountWeb3Port
         (Json.Decode.decodeValue decoder >> wrapper)
 
-
+giveUNSData : (Result Json.Decode.Error UNSData -> msg) -> Sub msg
+giveUNSData wrapper =
+    let
+        decoder =
+            Json.Decode.map2 UNSData
+                (field "domain" Json.Decode.string)
+                (field "address" Json.Decode.string)
+    in
+    giveUNSLoginData
+        (Json.Decode.decodeValue decoder >> wrapper)
 
 -- Asking for account Eth balance
 
@@ -1000,6 +1039,9 @@ providerTypeFromId id =
         5 ->
             Just Tally
 
+        6 ->
+            Just UnstoppableDomains
+
         _ ->
             Nothing
 
@@ -1027,4 +1069,6 @@ subscriptions =
         , giveNetwork (handleError (Json.Decode.errorToString >> (ForSelf << Error)) (ForSelf << SetNetwork))
         , giveTrxProviderType (handleError (Json.Decode.errorToString >> (ForSelf << Error)) (ForSelf << SetWalletProvider))
         , chooseProvider (\_ -> ForSelf <| ResetToChooseProvider)
+        , giveUNSData (handleError (Json.Decode.errorToString >> (ForSelf << Error)) (ForSelf << SetUNSUser))
+        , logoutUNSUser (\_ -> ForSelf <| LogoutUNSUser)
         ]
