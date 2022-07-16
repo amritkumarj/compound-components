@@ -3,7 +3,6 @@ import { getAccounts, getNetworkId, setLedgerProvider, setNewTrxProvider } from 
 import WalletLink from 'walletlink';
 import WalletConnectProvider from '@walletconnect/web3-provider';
 import UAuth from '@uauth/js'
-import { sendUNSLoginData } from './connectedWalletPorts';
 
 const uauth = new UAuth({
   clientID: '69833c81-0781-4011-9fc4-6fe7077d7c4d',
