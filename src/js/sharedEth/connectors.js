@@ -6,7 +6,7 @@ import UAuth from '@uauth/js'
 
 const uauth = new UAuth({
   clientID: '69833c81-0781-4011-9fc4-6fe7077d7c4d',
-  redirectUri: process.env.NODE_ENV == 'development' ? 'http://localhost:3000' : 'https://compound.blockdudes.com',
+  redirectUri: process.env.NODE_ENV == 'development' ? 'http://localhost:3000' : 'https://app.compound.finance',
   scope: "openid wallet"
 })
 
@@ -109,7 +109,7 @@ async function connectTally(eth, ethereum, disallowAuthDialog = false, isAutoCon
   }
 }
 
-async function connectUnstoppableDomains(app, eth, ethereum2, disallowAuthDialog = false, isAutoConnect = false, desiredNetworkId = 1) {
+async function connectUnstoppableDomains(app, eth, globEthereum, disallowAuthDialog = false, isAutoConnect = false, desiredNetworkId = 1) {
   let networkId, account, ethereum, user
 
     try{
@@ -124,7 +124,7 @@ async function connectUnstoppableDomains(app, eth, ethereum2, disallowAuthDialog
       sendUNSLoginData(app, user)
   
       if (['web3', 'injected'].includes(user.wallet_type_hint)) {
-        ({ networkId, account, ethereum } =  await connectWeb3Helper(eth, ethereum2, disallowAuthDialog, false))
+        ({ networkId, account, ethereum } =  await connectWeb3Helper(eth, globEthereum, disallowAuthDialog, false))
       } else if (user.wallet_type_hint === 'walletconnect') {
         ({ networkId, account, ethereum } = await connectWalletConnect(eth, disallowAuthDialog, desiredNetworkId));
       } else {
@@ -207,7 +207,6 @@ async function connectShowAccount(eth, showAccount) {
 }
 
 async function connectWalletConnect(eth, disallowAuthDialog = false, desiredNetworkId = 1) {
-
   const ethProviderName = desiredNetworkId == 3 ? 'ropsten' : 'mainnet';
   const JSONRPC_URL = eth.dataProviders[ethProviderName].host;
   const CHAIN_ID = desiredNetworkId;
