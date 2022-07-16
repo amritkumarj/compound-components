@@ -33,7 +33,7 @@ detectProvider providerType =
         "im_token" ->
             ImToken
 
-        "unstoppable_doamins" ->
+        "unstoppable_domains" ->
             UnstoppableDomains
 
         _ ->
